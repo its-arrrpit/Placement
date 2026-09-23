@@ -246,7 +246,12 @@ export default function PlacementTrackerPage() {
       {/* Subtle ambient light gradient at the top */}
       <div className="pointer-events-none fixed inset-0 z-0 bg-[radial-gradient(ellipse_80%_35%_at_50%_-5%,rgba(148,163,184,0.1),transparent)] dark:bg-[radial-gradient(ellipse_80%_35%_at_50%_-5%,rgba(59,130,246,0.06),transparent)]" />
 
-      <Navbar onRefresh={() => fetchPlacements(true)} isRefreshing={isRefreshing} />
+      <Navbar
+        onRefresh={() => fetchPlacements(true)}
+        isRefreshing={isRefreshing}
+        search={search}
+        onSearchChange={setSearch}
+      />
 
       {/* Main Content Container */}
       <main className="relative z-10 flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
