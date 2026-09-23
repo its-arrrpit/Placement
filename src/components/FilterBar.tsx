@@ -39,7 +39,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   onReset,
 }) => {
   const isFiltered =
-    search !== '' || selectedTier !== 'All' || showTodayOnly || sortByDate !== 'listed-desc';
+    search !== '' || selectedTier !== 'All' || showTodayOnly || sortByDate !== 'deadline-desc';
 
   return (
     <div className="panel rounded-lg p-3.5 mb-6 space-y-3 border border-slate-200 dark:border-slate-800 transition-colors">
@@ -76,17 +76,17 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               onChange={(e) => onSortByDateChange(e.target.value as DateSortOption)}
               className="bg-transparent text-slate-900 dark:text-slate-100 font-medium focus:outline-none cursor-pointer pr-1 text-xs"
             >
+              <option value="deadline-desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                Deadline (Latest)
+              </option>
+              <option value="deadline-asc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
+                Deadline (Urgent First)
+              </option>
               <option value="listed-desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                 Listed (Newest)
               </option>
               <option value="listed-asc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
                 Listed (Oldest)
-              </option>
-              <option value="deadline-asc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                Deadline (Urgent First)
-              </option>
-              <option value="deadline-desc" className="bg-white dark:bg-slate-900 text-slate-900 dark:text-white">
-                Deadline (Latest)
               </option>
             </select>
           </div>

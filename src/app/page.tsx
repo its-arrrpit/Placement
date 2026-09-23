@@ -95,7 +95,7 @@ export default function PlacementTrackerPage() {
   // Filters & State
   const [search, setSearch] = useState('');
   const [selectedTier, setSelectedTier] = useState('All');
-  const [sortByDate, setSortByDate] = useState<DateSortOption>('listed-desc');
+  const [sortByDate, setSortByDate] = useState<DateSortOption>('deadline-desc');
   const [showTodayOnly, setShowTodayOnly] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
@@ -221,7 +221,12 @@ export default function PlacementTrackerPage() {
         return tA - tB;
       }
       if (sortByDate === 'deadline-desc') {
-        return parseSortDate(b.deadline) - parseSortDate(a.deadline);
+        const tA = parseSortDate(a.deadline);
+        const tB = parseSortDate(b.deadline);
+        if (!tA && !tB) return 0;
+        if (!tA) return 1;
+        if (!tB) return -1;
+        return tB - tA;
       }
       return 0;
     });
@@ -232,7 +237,7 @@ export default function PlacementTrackerPage() {
   const handleResetFilters = () => {
     setSearch('');
     setSelectedTier('All');
-    setSortByDate('listed-desc');
+    setSortByDate('deadline-desc');
     setShowTodayOnly(false);
   };
 
