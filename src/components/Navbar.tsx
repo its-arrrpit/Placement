@@ -88,9 +88,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 tracking-tight">
                 Placement Terminal
               </span>
-              <span className="text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                2026
-              </span>
             </div>
           </div>
 
