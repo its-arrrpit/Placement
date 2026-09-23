@@ -1,12 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import { PlacementDrive } from '@/lib/db';
 import {
-  ExternalLink,
   Calendar,
-  Share2,
-  Check,
   GraduationCap,
   Clock,
   Layers,
@@ -17,14 +14,6 @@ interface CompanyCardProps {
 }
 
 export const CompanyCard: React.FC<CompanyCardProps> = ({ drive }) => {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopyLink = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    navigator.clipboard.writeText(drive.supersetLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const getTierTag = (tier: string) => {
     const t = (tier || '').toLowerCase();
@@ -143,38 +132,12 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ drive }) => {
         </div>
       </div>
 
-      {/* Footer Info & Direct Superset Action (Emerald Accent CTA - NOT blue, NOT dull black/white) */}
-      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
-        <div className="flex items-center justify-between text-xs sm:text-sm">
-          <span className="text-slate-500 dark:text-slate-400 font-medium">Deadline:</span>
-          <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
-            {drive.deadline}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <a
-            href={drive.supersetLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-xs"
-          >
-            <span>Apply on Superset</span>
-            <ExternalLink className="w-3.5 h-3.5 text-emerald-100" />
-          </a>
-
-          <button
-            onClick={handleCopyLink}
-            className="p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors"
-            title="Copy Superset Link"
-          >
-            {copied ? (
-              <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            ) : (
-              <Share2 className="w-4 h-4" />
-            )}
-          </button>
-        </div>
+      {/* Footer Info: Deadline */}
+      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs sm:text-sm">
+        <span className="text-slate-500 dark:text-slate-400 font-medium">Deadline:</span>
+        <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+          {drive.deadline}
+        </span>
       </div>
     </div>
   );
