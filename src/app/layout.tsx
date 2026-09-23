@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { ThemeProvider } from '@/components/ThemeContext';
 
 export const metadata: Metadata = {
   title: 'Placement Tracker 2026',
@@ -14,9 +15,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
-      <body className="min-h-screen flex flex-col antialiased selection:bg-indigo-500/30 selection:text-indigo-200">
-        {children}
+    <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var stored = localStorage.getItem('theme');
+                  var isDark = stored !== 'light';
+                  if (isDark) {
+                    document.documentElement.classList.add('dark');
+                  } else {
+                    document.documentElement.classList.remove('dark');
+                  }
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+      </head>
+      <body className="min-h-screen flex flex-col antialiased selection:bg-blue-600/20 selection:text-blue-600 dark:selection:bg-blue-600/30 dark:selection:text-blue-200">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

@@ -7,9 +7,9 @@ import {
   Calendar,
   Share2,
   Check,
-  Clock,
   GraduationCap,
-  CalendarDays,
+  Clock,
+  Layers,
 } from 'lucide-react';
 
 interface CompanyCardProps {
@@ -26,31 +26,30 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ drive }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Tier color styling
-  const getTierBadge = (tier: string) => {
+  const getTierTag = (tier: string) => {
     const t = (tier || '').toLowerCase();
     if (t.includes('super dream')) {
-      return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+      return 'bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-800';
     }
     if (t.includes('dream')) {
-      return 'bg-purple-500/20 text-purple-300 border-purple-500/40';
+      return 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800';
     }
     if (t.includes('tier 1')) {
-      return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+      return 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800';
     }
     if (t.includes('tier 2') || t === '2') {
-      return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
+      return 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800';
     }
-    return 'bg-slate-800 text-slate-300 border-slate-700';
+    return 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
   };
 
   return (
-    <div className="glass-card rounded-2xl p-5 flex flex-col justify-between group relative overflow-hidden transition-all duration-200 hover:border-slate-600/80 hover:shadow-xl hover:shadow-indigo-500/5">
-      {/* Top Bar: Tier Badge + Listed Date */}
+    <div className="card rounded-xl p-4 sm:p-5 flex flex-col justify-between transition-all border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-xs">
       <div>
-        <div className="flex items-center justify-between gap-2 mb-3">
+        {/* Top Header Row: Tier Badge + Listed Date */}
+        <div className="flex items-center justify-between gap-2 mb-3.5">
           <span
-            className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${getTierBadge(
+            className={`text-xs font-mono font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded border ${getTierTag(
               drive.tier
             )}`}
           >
@@ -58,84 +57,84 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ drive }) => {
           </span>
 
           {drive.dateListed && (
-            <div className="flex items-center gap-1 text-[11px] text-slate-400 font-medium">
-              <Clock className="w-3 h-3 text-slate-500" />
-              <span>Listed: {drive.dateListed}</span>
-            </div>
+            <span className="font-mono text-xs text-slate-500 dark:text-slate-400">
+              Listed {drive.dateListed}
+            </span>
           )}
         </div>
 
-        {/* Company & Role */}
-        <div className="flex items-start gap-3 mb-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-700 flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
+        {/* Company Identity & Role */}
+        <div className="flex items-start gap-3 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 flex items-center justify-center font-bold text-sm shrink-0 font-mono shadow-xs">
             {drive.company.slice(0, 2).toUpperCase()}
           </div>
 
           <div className="min-w-0 flex-1">
-            <h3 className="font-bold text-white text-base group-hover:text-indigo-300 transition-colors">
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base sm:text-lg leading-snug truncate">
               {drive.company}
             </h3>
-            <p className="text-xs text-slate-300 leading-snug mt-0.5 line-clamp-2">
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-0.5 line-clamp-1">
               {drive.role}
             </p>
           </div>
         </div>
 
-        {/* Prominent CTC & Stipend Side-by-Side Grid */}
-        <div className="grid grid-cols-2 gap-2.5 my-3 p-3 rounded-xl bg-slate-900/90 border border-slate-800">
-          <div>
-            <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">
-              Compensation (CTC)
+        {/* Compensation Matrix Block */}
+        <div className="grid grid-cols-2 gap-2.5 mb-4 font-mono">
+          <div className="p-3 rounded-lg bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/40">
+            <span className="text-xs uppercase font-semibold tracking-wider text-emerald-800 dark:text-emerald-400 block">
+              CTC Package
             </span>
-            <span className="text-xs sm:text-sm font-extrabold text-emerald-400 truncate block mt-0.5">
+            <span className="text-base sm:text-lg font-bold text-emerald-700 dark:text-emerald-300 truncate block mt-0.5">
               {drive.ctc}
             </span>
           </div>
 
-          <div>
-            <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block">
+          <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800">
+            <span className="text-xs uppercase font-semibold tracking-wider text-slate-500 dark:text-slate-400 block">
               Stipend
             </span>
-            <span className="text-xs sm:text-sm font-extrabold text-cyan-300 truncate block mt-0.5">
+            <span className="text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-200 truncate block mt-0.5">
               {drive.stipend || '—'}
             </span>
           </div>
         </div>
 
-        {/* Highlights: CGPA Cutoff + Assessment Dates */}
+        {/* Schedule & Requirements Badges */}
         {(drive.cgpaCutoff || drive.oaDate || drive.interviewDate) && (
-          <div className="flex flex-wrap items-center gap-1.5 mb-3 text-[11px]">
+          <div className="flex flex-wrap items-center gap-2 mb-4 text-xs font-mono">
             {drive.cgpaCutoff && (
-              <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 font-semibold flex items-center gap-1">
-                <GraduationCap className="w-3 h-3 text-amber-400" />
-                <span>Cutoff: {drive.cgpaCutoff}</span>
+              <span className="px-2.5 py-1 rounded bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-medium flex items-center gap-1.5">
+                <GraduationCap className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                <span>Min {drive.cgpaCutoff}</span>
               </span>
             )}
             {drive.oaDate && (
-              <span className="px-2 py-0.5 rounded-md bg-blue-950/70 border border-blue-800/40 text-blue-300 font-medium flex items-center gap-1">
-                <CalendarDays className="w-3 h-3 text-blue-400" />
+              <span className="px-2.5 py-1 rounded bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300 font-medium flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                 <span>OA: {drive.oaDate}</span>
               </span>
             )}
             {drive.interviewDate && (
-              <span className="px-2 py-0.5 rounded-md bg-purple-950/70 border border-purple-800/40 text-purple-300 font-medium flex items-center gap-1">
-                <CalendarDays className="w-3 h-3 text-purple-400" />
-                <span>Interview: {drive.interviewDate}</span>
+              <span className="px-2.5 py-1 rounded bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-300 font-medium flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-purple-600 dark:text-purple-400" />
+                <span>Int: {drive.interviewDate}</span>
               </span>
             )}
           </div>
         )}
 
-        {/* Eligible Departments */}
+        {/* Eligible Branches */}
         <div className="mb-4">
-          <span className="text-[10px] uppercase font-semibold tracking-wider text-slate-400 block mb-1.5">
-            Eligible Departments
-          </span>
+          <div className="flex items-center gap-1.5 text-xs uppercase font-mono font-semibold tracking-wider text-slate-400 dark:text-slate-500 mb-2">
+            <Layers className="w-3.5 h-3.5 text-slate-400" />
+            <span>Eligible Branches</span>
+          </div>
           <div className="flex flex-wrap gap-1.5 items-center">
             {drive.eligibleBranches.map((branch) => (
               <span
                 key={branch}
-                className="px-2 py-0.5 rounded-md bg-slate-800/90 text-[11px] font-medium text-slate-200 border border-slate-700/70"
+                className="px-2 py-0.5 rounded text-xs font-mono font-medium bg-slate-100 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800"
               >
                 {branch}
               </span>
@@ -144,36 +143,33 @@ export const CompanyCard: React.FC<CompanyCardProps> = ({ drive }) => {
         </div>
       </div>
 
-      {/* Footer Info & Actions */}
-      <div className="pt-3 border-t border-slate-800/80 space-y-3">
-        {/* Deadline */}
-        <div className="flex items-center justify-between text-xs text-slate-300">
-          <div className="flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span className="text-slate-400 font-medium">Deadline:</span>
-            <span className="font-semibold text-white">{drive.deadline}</span>
-          </div>
+      {/* Footer Info & Direct Superset Action (Emerald Accent CTA - NOT blue, NOT dull black/white) */}
+      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+        <div className="flex items-center justify-between text-xs sm:text-sm">
+          <span className="text-slate-500 dark:text-slate-400 font-medium">Deadline:</span>
+          <span className="font-mono font-bold text-slate-900 dark:text-slate-100">
+            {drive.deadline}
+          </span>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex items-center gap-2">
           <a
             href={drive.supersetLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-500 shadow-md shadow-indigo-600/20 transition-all"
+            className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 transition-colors shadow-xs"
           >
             <span>Apply on Superset</span>
-            <ExternalLink className="w-3.5 h-3.5" />
+            <ExternalLink className="w-3.5 h-3.5 text-emerald-100" />
           </a>
 
           <button
             onClick={handleCopyLink}
-            className="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 transition-colors"
+            className="p-2.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors"
             title="Copy Superset Link"
           >
             {copied ? (
-              <Check className="w-4 h-4 text-emerald-400" />
+              <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
             ) : (
               <Share2 className="w-4 h-4" />
             )}

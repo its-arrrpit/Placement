@@ -2,14 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { PlacementDrive } from '@/lib/db';
-import {
-  Calendar,
-  Clock,
-  Laptop,
-  Users,
-  Zap,
-  CheckCircle2,
-} from 'lucide-react';
+import { Calendar, Laptop, Users, Clock } from 'lucide-react';
 
 interface ActivityItem {
   id: string;
@@ -68,25 +61,8 @@ function isDateTomorrow(date: Date | null): boolean {
   return isSameDay(date, tomorrow);
 }
 
-function getRelativeDateLabel(date: Date | null, rawStr: string): string {
-  if (!date) return rawStr;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(date);
-  target.setHours(0, 0, 0, 0);
-
-  const diffDays = Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  if (diffDays === -1) return 'Yesterday';
-  if (diffDays < -1) return `${Math.abs(diffDays)}d ago`;
-  if (diffDays <= 7) return `In ${diffDays} days`;
-  return rawStr;
-}
-
 export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ drives }) => {
-  const [filterMode, setFilterMode] = useState<'today' | 'tomorrow' | 'all'>('today');
+  const [activeTab, setActiveTab] = useState<'today' | 'tomorrow'>('today');
 
   const allActivities = useMemo(() => {
     const list: ActivityItem[] = [];
@@ -123,7 +99,6 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
       }
     });
 
-    // Sort chronologically
     list.sort((a, b) => {
       if (!a.dateObj) return 1;
       if (!b.dateObj) return -1;
@@ -141,188 +116,137 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
     return allActivities.filter((a) => a.isTomorrow);
   }, [allActivities]);
 
-  const displayedActivities = useMemo(() => {
-    if (filterMode === 'today') return todayActivities;
-    if (filterMode === 'tomorrow') return tomorrowActivities;
-    return allActivities;
-  }, [filterMode, todayActivities, tomorrowActivities, allActivities]);
-
   const todayDateFormatted = new Date().toLocaleDateString('en-GB', {
+    weekday: 'short',
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
   });
 
   const tomorrowDate = new Date();
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const tomorrowDateFormatted = tomorrowDate.toLocaleDateString('en-GB', {
+    weekday: 'short',
     day: 'numeric',
     month: 'short',
-    year: 'numeric',
   });
 
-  const getTypeStyle = (type: ActivityItem['type']) => {
-    switch (type) {
-      case 'Online Assessment':
-        return {
-          icon: <Laptop className="w-3.5 h-3.5 text-blue-400" />,
-          pill: 'bg-blue-500/15 text-blue-300 border-blue-500/30',
-        };
-      case 'Interview':
-        return {
-          icon: <Users className="w-3.5 h-3.5 text-purple-400" />,
-          pill: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
-        };
-    }
+  const currentActivities = activeTab === 'today' ? todayActivities : tomorrowActivities;
+  const currentDateFormatted = activeTab === 'today' ? todayDateFormatted : tomorrowDateFormatted;
+
+  const renderActivityCard = (act: ActivityItem, period: 'today' | 'tomorrow') => {
+    const isOA = act.type === 'Online Assessment';
+
+    return (
+      <div
+        key={act.id}
+        className="bg-gradient-to-b from-white to-slate-50/70 dark:from-[#111827] dark:to-[#0e1422] border border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl p-4 sm:p-5 transition-all shadow-xs hover:shadow-xs"
+      >
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex items-start gap-3 min-w-0 flex-1">
+            <div className="w-10 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 flex items-center justify-center font-bold text-sm font-mono shrink-0">
+              {act.company.slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 truncate block">
+                {act.company}
+              </span>
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                {act.role}
+              </p>
+            </div>
+          </div>
+
+          <span className="text-xs font-medium px-2.5 py-1 rounded-md shrink-0 inline-flex items-center gap-1.5 border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+            {isOA ? <Laptop className="w-3.5 h-3.5 text-slate-400" /> : <Users className="w-3.5 h-3.5 text-slate-400" />}
+            <span>{isOA ? 'Assessment' : 'Interview'}</span>
+          </span>
+        </div>
+
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs sm:text-sm">
+          <div className="flex items-center gap-1.5 font-mono text-slate-600 dark:text-slate-300 font-medium">
+            <Clock className="w-4 h-4 text-slate-400 dark:text-slate-500" />
+            <span>{act.dateStr}</span>
+          </div>
+          <span className="font-mono text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+            {period === 'today' ? 'Today' : 'Tomorrow'}
+          </span>
+        </div>
+      </div>
+    );
   };
 
   return (
-    <section className="mb-6 p-4 sm:p-5 rounded-2xl glass-panel border border-slate-800 space-y-3.5">
-      {/* Header with Mode Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shrink-0">
-            <Zap className="w-4 h-4" />
+    <section className="relative overflow-hidden mb-6 rounded-xl bg-gradient-to-b from-white via-white to-slate-50/50 dark:from-[#111827] dark:via-[#111827] dark:to-[#0d131f] border border-slate-200/90 dark:border-slate-800 p-4 sm:p-5 shadow-xs transition-colors">
+      {/* Ultra-minimal subtle top gradient accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-slate-300 dark:via-slate-700 to-transparent" />
+      {/* Title & Tab Controls (Only Today and Tomorrow) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-slate-100 dark:border-slate-800">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 flex items-center justify-center shrink-0">
+            <Calendar className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-sm font-bold text-white tracking-wide uppercase">
-                {filterMode === 'today'
-                  ? "Today's OA & Interviews"
-                  : filterMode === 'tomorrow'
-                  ? "Tomorrow's OA & Interviews"
-                  : 'Upcoming OA & Interviews'}
+            <div className="flex items-center gap-2">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+                Daily Action Agenda
               </h2>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
-                {filterMode === 'today'
-                  ? todayDateFormatted
-                  : filterMode === 'tomorrow'
-                  ? tomorrowDateFormatted
-                  : `${allActivities.length} Events`}
+              <span className="text-xs font-mono font-medium px-2.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                {todayActivities.length + tomorrowActivities.length} Scheduled
               </span>
             </div>
-            <p className="text-[11px] text-slate-400">
-              {filterMode === 'today'
-                ? `Showing ${todayActivities.length} scheduled assessment(s) & interview(s) for today`
-                : filterMode === 'tomorrow'
-                ? `Showing ${tomorrowActivities.length} scheduled assessment(s) & interview(s) for tomorrow`
-                : `Showing all ${allActivities.length} upcoming OA and interview events`}
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Scheduled assessments &amp; interviews
             </p>
           </div>
         </div>
 
-        {/* Filter Toggle: Today, Tomorrow, All Upcoming */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 self-start sm:self-auto overflow-x-auto max-w-full">
+        {/* View Switcher: Only Today & Tomorrow */}
+        <div className="flex items-center gap-1.5 p-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm self-start sm:self-auto font-medium">
           <button
-            onClick={() => setFilterMode('today')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-              filterMode === 'today'
-                ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+            onClick={() => setActiveTab('today')}
+            className={`px-3.5 py-1.5 rounded-md transition-all ${
+              activeTab === 'today'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             Today ({todayActivities.length})
           </button>
+
           <button
-            onClick={() => setFilterMode('tomorrow')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-              filterMode === 'tomorrow'
-                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
+            onClick={() => setActiveTab('tomorrow')}
+            className={`px-3.5 py-1.5 rounded-md transition-all ${
+              activeTab === 'tomorrow'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-semibold shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             Tomorrow ({tomorrowActivities.length})
           </button>
-          <button
-            onClick={() => setFilterMode('all')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
-              filterMode === 'all'
-                ? 'bg-indigo-600 text-white shadow-sm'
-                : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            All Upcoming ({allActivities.length})
-          </button>
         </div>
       </div>
 
-      {/* Grid of activities */}
-      {displayedActivities.length > 0 ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
-          {displayedActivities.map((act) => {
-            const style = getTypeStyle(act.type);
-            const relativeLabel = getRelativeDateLabel(act.dateObj, act.dateStr);
-
-            return (
-              <div
-                key={act.id}
-                className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
-                  act.isToday
-                    ? 'bg-gradient-to-r from-rose-950/20 to-slate-900/90 border-rose-500/30 shadow-sm shadow-rose-500/5'
-                    : act.isTomorrow
-                    ? 'bg-gradient-to-r from-amber-950/20 to-slate-900/90 border-amber-500/30 shadow-sm shadow-amber-500/5'
-                    : 'bg-slate-900/90 border-slate-800'
-                }`}
-              >
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <span
-                    className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[11px] font-semibold border ${style.pill}`}
-                  >
-                    {style.icon}
-                    <span>{act.type}</span>
-                  </span>
-
-                  <span
-                    className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
-                      act.isToday
-                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
-                        : act.isTomorrow
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                        : 'bg-slate-800 text-slate-300 border-slate-700'
-                    }`}
-                  >
-                    {relativeLabel}
-                  </span>
-                </div>
-
-                <div>
-                  <h4 className="font-bold text-white text-sm truncate">
-                    {act.company}
-                  </h4>
-                  <p className="text-xs text-slate-300 truncate mt-0.5">
-                    {act.role}
-                  </p>
-                </div>
-
-                <div className="pt-2.5 mt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                  <div className="flex items-center gap-1.5 text-white font-semibold">
-                    <Clock
-                      className={`w-3.5 h-3.5 ${
-                        act.type === 'Interview' ? 'text-purple-400' : 'text-blue-400'
-                      }`}
-                    />
-                    <span>{act.dateStr}</span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    {act.type}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-          <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>
-            {filterMode === 'today'
-              ? 'No online assessments or interviews scheduled for today.'
-              : filterMode === 'tomorrow'
-              ? 'No online assessments or interviews scheduled for tomorrow.'
-              : 'No upcoming online assessments or interviews scheduled.'}
+      {/* Grid Content */}
+      <div className="pt-4 space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <span className="font-bold text-xs sm:text-sm uppercase tracking-wider text-slate-700 dark:text-slate-300 font-mono">
+            {activeTab === 'today' ? "Today's Lineup" : "Tomorrow's Lineup"}
+          </span>
+          <span className="font-mono text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
+            {currentDateFormatted}
           </span>
         </div>
-      )}
+
+        {currentActivities.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {currentActivities.map((act) => renderActivityCard(act, activeTab))}
+          </div>
+        ) : (
+          <div className="p-8 rounded-lg border border-dashed border-slate-200 dark:border-slate-800 text-center text-xs sm:text-sm text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-900/30">
+            No online assessments or interviews scheduled for {activeTab === 'today' ? 'today' : 'tomorrow'}
+          </div>
+        )}
+      </div>
     </section>
   );
 };
