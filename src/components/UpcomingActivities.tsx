@@ -7,7 +7,6 @@ import {
   Clock,
   Laptop,
   Users,
-  ExternalLink,
   Zap,
   CheckCircle2,
 } from 'lucide-react';
@@ -16,17 +15,23 @@ interface ActivityItem {
   id: string;
   company: string;
   role: string;
-  type: 'Deadline' | 'Online Assessment' | 'Interview';
+  type: 'Online Assessment' | 'Interview';
   dateStr: string;
   dateObj: Date | null;
   isToday: boolean;
-  supersetLink: string;
+  isTomorrow: boolean;
 }
 
 function parseActivityDate(str?: string): Date | null {
   if (!str) return null;
   const clean = str.trim();
-  if (!clean || clean.toLowerCase().includes('check') || clean.toLowerCase().includes('not')) {
+  if (
+    !clean ||
+    clean.toLowerCase().includes('check') ||
+    clean.toLowerCase().includes('not') ||
+    clean.toLowerCase().includes('tba') ||
+    clean.toLowerCase().includes('tbd')
+  ) {
     return null;
   }
   const parsed = new Date(clean.replace(/Sept\b/i, 'Sep'));
@@ -37,17 +42,30 @@ function parseActivityDate(str?: string): Date | null {
   if (m) {
     return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]));
   }
+  const m2 = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (m2) {
+    return new Date(parseInt(m2[3]), parseInt(m2[2]) - 1, parseInt(m2[1]));
+  }
   return null;
 }
 
-function isDateToday(date: Date | null): boolean {
-  if (!date) return false;
-  const today = new Date();
+function isSameDay(d1: Date | null, d2: Date): boolean {
+  if (!d1) return false;
   return (
-    date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear()
+    d1.getDate() === d2.getDate() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getFullYear() === d2.getFullYear()
   );
+}
+
+function isDateToday(date: Date | null): boolean {
+  return isSameDay(date, new Date());
+}
+
+function isDateTomorrow(date: Date | null): boolean {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return isSameDay(date, tomorrow);
 }
 
 function getRelativeDateLabel(date: Date | null, rawStr: string): string {
@@ -68,28 +86,13 @@ function getRelativeDateLabel(date: Date | null, rawStr: string): string {
 }
 
 export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ drives }) => {
-  const [filterMode, setFilterMode] = useState<'today' | 'all'>('today');
+  const [filterMode, setFilterMode] = useState<'today' | 'tomorrow' | 'all'>('today');
 
   const allActivities = useMemo(() => {
     const list: ActivityItem[] = [];
 
     drives.forEach((d) => {
-      // 1. Deadline
-      if (d.deadline && !d.deadline.toLowerCase().includes('check')) {
-        const dObj = parseActivityDate(d.deadline);
-        list.push({
-          id: `${d.id}_deadline`,
-          company: d.company,
-          role: d.role,
-          type: 'Deadline',
-          dateStr: d.deadline,
-          dateObj: dObj,
-          isToday: isDateToday(dObj),
-          supersetLink: d.supersetLink,
-        });
-      }
-
-      // 2. Online Assessment Date
+      // 1. Online Assessment Date
       if (d.oaDate) {
         const dObj = parseActivityDate(d.oaDate);
         list.push({
@@ -100,11 +103,11 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
           dateStr: d.oaDate,
           dateObj: dObj,
           isToday: isDateToday(dObj),
-          supersetLink: d.supersetLink,
+          isTomorrow: isDateTomorrow(dObj),
         });
       }
 
-      // 3. Interview Date
+      // 2. Interview Date
       if (d.interviewDate) {
         const dObj = parseActivityDate(d.interviewDate);
         list.push({
@@ -115,7 +118,7 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
           dateStr: d.interviewDate,
           dateObj: dObj,
           isToday: isDateToday(dObj),
-          supersetLink: d.supersetLink,
+          isTomorrow: isDateTomorrow(dObj),
         });
       }
     });
@@ -134,7 +137,15 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
     return allActivities.filter((a) => a.isToday);
   }, [allActivities]);
 
-  const displayedActivities = filterMode === 'today' ? todayActivities : allActivities;
+  const tomorrowActivities = useMemo(() => {
+    return allActivities.filter((a) => a.isTomorrow);
+  }, [allActivities]);
+
+  const displayedActivities = useMemo(() => {
+    if (filterMode === 'today') return todayActivities;
+    if (filterMode === 'tomorrow') return tomorrowActivities;
+    return allActivities;
+  }, [filterMode, todayActivities, tomorrowActivities, allActivities]);
 
   const todayDateFormatted = new Date().toLocaleDateString('en-GB', {
     day: 'numeric',
@@ -142,13 +153,16 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
     year: 'numeric',
   });
 
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowDateFormatted = tomorrowDate.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+
   const getTypeStyle = (type: ActivityItem['type']) => {
     switch (type) {
-      case 'Deadline':
-        return {
-          icon: <Clock className="w-3.5 h-3.5 text-rose-400" />,
-          pill: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-        };
       case 'Online Assessment':
         return {
           icon: <Laptop className="w-3.5 h-3.5 text-blue-400" />,
@@ -167,31 +181,41 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
       {/* Header with Mode Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center border border-rose-500/30 shrink-0">
+          <div className="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shrink-0">
             <Zap className="w-4 h-4" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-sm font-bold text-white tracking-wide uppercase">
-                Today&apos;s Activities & Schedule
+                {filterMode === 'today'
+                  ? "Today's OA & Interviews"
+                  : filterMode === 'tomorrow'
+                  ? "Tomorrow's OA & Interviews"
+                  : 'Upcoming OA & Interviews'}
               </h2>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                {todayDateFormatted}
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30">
+                {filterMode === 'today'
+                  ? todayDateFormatted
+                  : filterMode === 'tomorrow'
+                  ? tomorrowDateFormatted
+                  : `${allActivities.length} Events`}
               </span>
             </div>
             <p className="text-[11px] text-slate-400">
               {filterMode === 'today'
-                ? `Showing ${todayActivities.length} urgent action(s) for today`
-                : `Showing all ${allActivities.length} upcoming events`}
+                ? `Showing ${todayActivities.length} scheduled assessment(s) & interview(s) for today`
+                : filterMode === 'tomorrow'
+                ? `Showing ${tomorrowActivities.length} scheduled assessment(s) & interview(s) for tomorrow`
+                : `Showing all ${allActivities.length} upcoming OA and interview events`}
             </p>
           </div>
         </div>
 
-        {/* Filter Toggle: Today Only vs All Upcoming */}
-        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 self-start sm:self-auto">
+        {/* Filter Toggle: Today, Tomorrow, All Upcoming */}
+        <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 self-start sm:self-auto overflow-x-auto max-w-full">
           <button
             onClick={() => setFilterMode('today')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               filterMode === 'today'
                 ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -200,8 +224,18 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
             Today ({todayActivities.length})
           </button>
           <button
+            onClick={() => setFilterMode('tomorrow')}
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
+              filterMode === 'tomorrow'
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            Tomorrow ({tomorrowActivities.length})
+          </button>
+          <button
             onClick={() => setFilterMode('all')}
-            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+            className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all whitespace-nowrap ${
               filterMode === 'all'
                 ? 'bg-indigo-600 text-white shadow-sm'
                 : 'text-slate-400 hover:text-slate-200'
@@ -222,7 +256,13 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
             return (
               <div
                 key={act.id}
-                className="p-3.5 rounded-xl bg-slate-900/90 border border-rose-500/30 bg-gradient-to-r from-rose-950/20 to-slate-900/90 shadow-sm shadow-rose-500/5 flex flex-col justify-between"
+                className={`p-3.5 rounded-xl border flex flex-col justify-between transition-all ${
+                  act.isToday
+                    ? 'bg-gradient-to-r from-rose-950/20 to-slate-900/90 border-rose-500/30 shadow-sm shadow-rose-500/5'
+                    : act.isTomorrow
+                    ? 'bg-gradient-to-r from-amber-950/20 to-slate-900/90 border-amber-500/30 shadow-sm shadow-amber-500/5'
+                    : 'bg-slate-900/90 border-slate-800'
+                }`}
               >
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <span
@@ -232,7 +272,15 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
                     <span>{act.type}</span>
                   </span>
 
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/40 animate-pulse">
+                  <span
+                    className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                      act.isToday
+                        ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 animate-pulse'
+                        : act.isTomorrow
+                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                        : 'bg-slate-800 text-slate-300 border-slate-700'
+                    }`}
+                  >
                     {relativeLabel}
                   </span>
                 </div>
@@ -248,19 +296,16 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
 
                 <div className="pt-2.5 mt-2.5 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
                   <div className="flex items-center gap-1.5 text-white font-semibold">
-                    <Clock className="w-3.5 h-3.5 text-rose-400" />
+                    <Clock
+                      className={`w-3.5 h-3.5 ${
+                        act.type === 'Interview' ? 'text-purple-400' : 'text-blue-400'
+                      }`}
+                    />
                     <span>{act.dateStr}</span>
                   </div>
-
-                  <a
-                    href={act.supersetLink}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="hover:text-indigo-300 transition-colors flex items-center gap-1 font-semibold text-indigo-400 text-xs"
-                  >
-                    <span>Apply on Superset</span>
-                    <ExternalLink className="w-3.5 h-3.5" />
-                  </a>
+                  <span className="text-[11px] text-slate-400 font-medium">
+                    {act.type}
+                  </span>
                 </div>
               </div>
             );
@@ -269,7 +314,13 @@ export const UpcomingActivities: React.FC<{ drives: PlacementDrive[] }> = ({ dri
       ) : (
         <div className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
           <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-          <span>No deadlines or events scheduled for today. You&apos;re all caught up!</span>
+          <span>
+            {filterMode === 'today'
+              ? 'No online assessments or interviews scheduled for today.'
+              : filterMode === 'tomorrow'
+              ? 'No online assessments or interviews scheduled for tomorrow.'
+              : 'No upcoming online assessments or interviews scheduled.'}
+          </span>
         </div>
       )}
     </section>

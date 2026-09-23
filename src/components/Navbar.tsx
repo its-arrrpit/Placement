@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { RefreshCw, ExternalLink, GraduationCap } from 'lucide-react';
+import { RefreshCw, GraduationCap } from 'lucide-react';
 
 interface NavbarProps {
   onRefresh: () => Promise<void>;
@@ -43,17 +43,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onRefresh, isRefreshing = false 
               />
               <span>Reload Sheet</span>
             </button>
-
-            {/* Superset Portal Direct Link */}
-            <a
-              href="https://app.joinsuperset.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-all shadow-md shadow-indigo-600/20"
-            >
-              <span>Superset Login</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
           </div>
         </div>
       </div>

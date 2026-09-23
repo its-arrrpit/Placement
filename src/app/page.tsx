@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { PlacementDrive } from '@/lib/db';
 import { Navbar } from '@/components/Navbar';
-import { FilterBar } from '@/components/FilterBar';
+import { FilterBar, DateSortOption } from '@/components/FilterBar';
 import { CompanyCard } from '@/components/CompanyCard';
 import { UpcomingActivities } from '@/components/UpcomingActivities';
 import {
@@ -33,14 +33,43 @@ function isTodayDate(str?: string): boolean {
   );
 }
 
+function parseSortDate(str?: string): number {
+  if (!str) return 0;
+  const clean = str.trim();
+  if (
+    !clean ||
+    clean.toLowerCase().includes('closed') ||
+    clean.toLowerCase().includes('check') ||
+    clean.toLowerCase().includes('not') ||
+    clean.toLowerCase().includes('tba') ||
+    clean.toLowerCase().includes('tbd')
+  ) {
+    return 0;
+  }
+  const parsed = new Date(clean.replace(/Sept\b/i, 'Sep'));
+  if (!isNaN(parsed.getTime())) {
+    return parsed.getTime();
+  }
+  const m = clean.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    return new Date(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3])).getTime();
+  }
+  const m2 = clean.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+  if (m2) {
+    return new Date(parseInt(m2[3]), parseInt(m2[2]) - 1, parseInt(m2[1])).getTime();
+  }
+  return 0;
+}
+
 export default function PlacementTrackerPage() {
   const [drives, setDrives] = useState<PlacementDrive[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Search & Branch filters
+  // Search, Tier, Date Sort & Today filters
   const [search, setSearch] = useState('');
-  const [selectedBranch, setSelectedBranch] = useState('All');
+  const [selectedTier, setSelectedTier] = useState('All');
+  const [sortByDate, setSortByDate] = useState<DateSortOption>('listed-desc');
   const [showTodayOnly, setShowTodayOnly] = useState(false);
 
   const fetchPlacements = useCallback(async (quiet = false) => {
@@ -83,9 +112,17 @@ export default function PlacementTrackerPage() {
     };
   }, [fetchPlacements]);
 
-  // Client-side filtering
+  // Dynamic list of available tiers from data
+  const availableTiers = useMemo(() => {
+    const rawTiers = drives.map((d) => d.tier).filter(Boolean);
+    const unique = Array.from(new Set(rawTiers));
+    unique.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    return ['All', ...unique];
+  }, [drives]);
+
+  // Client-side filtering and date sorting
   const filteredDrives = useMemo(() => {
-    return drives.filter((drive) => {
+    const list = drives.filter((drive) => {
       // Today only filter
       if (showTodayOnly) {
         const isDeadlineToday = isTodayDate(drive.deadline);
@@ -106,25 +143,51 @@ export default function PlacementTrackerPage() {
         if (!matchCompany && !matchRole && !matchTier && !matchBranch) return false;
       }
 
-      // Branch filter
-      if (selectedBranch !== 'All') {
-        const query = selectedBranch.toUpperCase();
-        const eligible = drive.eligibleBranches.some(
-          (b) =>
-            b.toUpperCase().includes(query) ||
-            b.toUpperCase().includes('ALL') ||
-            b.toUpperCase().includes('REFER')
-        );
-        if (!eligible) return false;
+      // Tier filter
+      if (selectedTier !== 'All') {
+        if (drive.tier.toLowerCase() !== selectedTier.toLowerCase()) {
+          return false;
+        }
       }
 
       return true;
     });
-  }, [drives, search, selectedBranch, showTodayOnly]);
+
+    // Date Sorting
+    list.sort((a, b) => {
+      if (sortByDate === 'listed-desc') {
+        const tA = parseSortDate(a.dateListed);
+        const tB = parseSortDate(b.dateListed);
+        return tB - tA;
+      }
+      if (sortByDate === 'listed-asc') {
+        const tA = parseSortDate(a.dateListed);
+        const tB = parseSortDate(b.dateListed);
+        return tA - tB;
+      }
+      if (sortByDate === 'deadline-asc') {
+        const tA = parseSortDate(a.deadline);
+        const tB = parseSortDate(b.deadline);
+        if (!tA && !tB) return 0;
+        if (!tA) return 1;
+        if (!tB) return -1;
+        return tA - tB;
+      }
+      if (sortByDate === 'deadline-desc') {
+        const tA = parseSortDate(a.deadline);
+        const tB = parseSortDate(b.deadline);
+        return tB - tA;
+      }
+      return 0;
+    });
+
+    return list;
+  }, [drives, search, selectedTier, showTodayOnly, sortByDate]);
 
   const handleResetFilters = () => {
     setSearch('');
-    setSelectedBranch('All');
+    setSelectedTier('All');
+    setSortByDate('listed-desc');
     setShowTodayOnly(false);
   };
 
@@ -161,12 +224,15 @@ export default function PlacementTrackerPage() {
         {/* Today's Activities & Schedule */}
         <UpcomingActivities drives={drives} />
 
-        {/* Search & Department Filters */}
+        {/* Search, Tier & Date Sort Filters */}
         <FilterBar
           search={search}
           onSearchChange={setSearch}
-          selectedBranch={selectedBranch}
-          onBranchChange={setSelectedBranch}
+          selectedTier={selectedTier}
+          onTierChange={setSelectedTier}
+          availableTiers={availableTiers}
+          sortByDate={sortByDate}
+          onSortByDateChange={setSortByDate}
           showTodayOnly={showTodayOnly}
           onToggleTodayOnly={() => setShowTodayOnly((prev) => !prev)}
           totalFiltered={filteredDrives.length}
